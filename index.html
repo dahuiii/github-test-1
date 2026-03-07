@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI术语关联图谱</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>AI术语关联图谱</h1>
+      <p class="subtitle">帮助小白理解复杂的AI术语及其相互关系</p>
+    </header>
+    
+    <div class="graph-container">
+      <div id="graph"></div>
+    </div>
+    
+    <div class="info-panel" id="infoPanel">
+      <div class="info-content">
+        <h2 id="infoTitle">术语名称</h2>
+        <div id="infoDescription">悬停在节点上查看术语解释</div>
+      </div>
+    </div>
+    
+    <footer>
+      <p>提示：悬停查看解释，点击查看详情，拖拽调整位置，滚轮缩放</p>
+    </footer>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
