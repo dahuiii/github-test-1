@@ -11,11 +11,10 @@
 ```
 ai-terms-graph/
 ├── index.html          # 主页面（双击即可运行）
-├── data.json           # 术语数据文件
 ├── css/
 │   └── style.css       # 样式文件
 └── js/
-    └── app.js          # 业务逻辑代码
+    └── app.js          # 业务逻辑代码（包含内嵌的graphData数据）
 ```
 
 ### 1.2 目录说明
@@ -23,13 +22,8 @@ ai-terms-graph/
 **index.html**
 - 网页的主文件
 - 包含页面的HTML结构
-- 引入Vue和ECharts的CDN链接
+- 引入ECharts的CDN链接
 - 双击这个文件就可以在浏览器中打开
-
-**data.json**
-- 存储所有AI术语的数据
-- 包含术语的名称、解释、关联关系
-- 可以直接用记事本编辑
 
 **css/style.css**
 - 存储页面的样式
@@ -38,8 +32,14 @@ ai-terms-graph/
 
 **js/app.js**
 - 存储页面的功能代码
+- 包含内嵌的graphData数据（AI术语数据）
 - 控制图谱的显示、交互等
-- 实现悬停显示解释等功能
+- 实现悬停显示解释、节点筛选等功能
+
+**数据存储说明**
+- 数据直接内嵌在app.js中，而不是单独的data.json文件
+- 这样可以避免浏览器安全限制，支持直接打开HTML文件（file://协议）
+- 修改数据时，直接编辑app.js中的graphData对象
 
 ---
 
@@ -51,14 +51,14 @@ ai-terms-graph/
 
 ```
 项目
-├── 数据模块（data.json）
+├── 数据模块（app.js中的graphData对象）
 ├── 视图模块（index.html + style.css）
-└── 控制模块（app.js）
+└── 控制模块（app.js中的交互逻辑）
 ```
 
 ### 2.2 数据模块
 
-**文件**：data.json
+**文件**：app.js（内嵌的graphData对象）
 
 **功能**：
 - 存储所有AI术语的数据
@@ -66,28 +66,32 @@ ai-terms-graph/
 - 提供术语的通俗解释
 
 **数据结构**：
-```json
-{
+```javascript
+let graphData = {
   "nodes": [
     {
       "id": "llm",
       "name": "LLM",
+      "label": "LLM (大语言模型)",
+      "category": "main",
       "description": "AI大脑，它是一个阅读了互联网上几乎所有文本的'超级博学家'..."
     }
   ],
   "links": [
     {
       "source": "llm",
-      "target": "multimodal"
+      "target": "multimodal",
+      "relation": "包含"
     }
   ]
-}
+};
 ```
 
 **为什么这样设计**：
 - 简单直观，容易理解和修改
-- 数据和代码分离，修改数据不需要改代码
-- JSON格式通用，很多工具都支持
+- 数据内嵌在代码中，避免浏览器安全限制
+- 支持直接打开HTML文件（file://协议）
+- 修改数据时直接编辑app.js即可
 
 ### 2.3 视图模块
 
@@ -147,18 +151,21 @@ h1 {
 
 **代码结构**：
 ```javascript
-// 1. 读取数据
-const data = fetch('data.json').then(res => res.json());
+// 1. 数据已内嵌在graphData变量中
+let graphData = { /* ... 数据 ... */ };
+let originalGraphData = null;  // 保存原始数据用于恢复
+let selectedNodeId = null;     // 记录当前选中的节点
 
 // 2. 初始化ECharts
 const chart = echarts.init(document.getElementById('graph'));
 
 // 3. 配置图谱选项
 const option = {
+  tooltip: { /* 悬停提示配置 */ },
   series: [{
     type: 'graph',
-    data: data.nodes,
-    links: data.links,
+    data: graphData.nodes,
+    links: graphData.links,
     // ... 其他配置
   }]
 };
@@ -167,15 +174,57 @@ const option = {
 chart.setOption(option);
 
 // 5. 处理交互
-chart.on('mouseover', function(params) {
-  // 显示术语解释
+// 悬停显示解释
+// 点击节点处理
+chart.on('click', function(params) {
+  if (params.dataType === 'node') {
+    const node = params.data;
+    
+    if (selectedNodeId === node.id) {
+      // 如果点击的是已选中的节点
+      if (node.category === 'main' && expandedNodeId !== node.id) {
+        // 主节点第二次点击：展开关联下的所有节点
+        expandAllRelatedNodes(node.id);
+      } else {
+        // 恢复所有节点
+        restoreAllNodes();
+      }
+    } else {
+      // 显示相关节点（第一次点击）
+      showRelatedNodes(node.id);
+    }
+  }
 });
+
+// 点击空白处恢复所有节点
+chart.getZr().on('click', function(params) {
+  if (!params.target) {
+    restoreAllNodes();
+  }
+});
+
+// 显示相关节点（直接相连）
+function showRelatedNodes(nodeId) {
+  // 找到直接相连的节点并更新图表
+}
+
+// 展开所有关联节点（包括间接关联）
+function expandAllRelatedNodes(nodeId) {
+  // 使用广度优先搜索找到所有关联节点
+  // 更新图表显示所有关联节点
+}
+
+// 恢复所有节点
+function restoreAllNodes() {
+  // 恢复显示完整图谱
+}
 ```
 
 **为什么这样设计**：
 - 代码逻辑清晰，容易理解
 - 功能集中在一个文件中，便于管理
 - 使用ECharts提供的API，简化开发
+- 支持节点筛选交互，提升用户体验
 
 ---
 
@@ -377,8 +426,8 @@ ai-terms-graph/
 ```
 
 **步骤2：准备数据**
-- 编辑data.json，添加AI术语数据
-- 确保JSON格式正确
+- 编辑app.js中的graphData对象，添加AI术语数据
+- 确保JavaScript对象格式正确
 
 **步骤3：编写HTML**
 - 创建index.html
